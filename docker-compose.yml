@@ -1,1 +1,40 @@
+version: '3.8'
 
+services:
+  nats:
+    image: nats:latest
+    container_name: nats-server
+    command: ["-c", "/etc/nats/nats.conf"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - ./nats/nats.conf:/etc/nats/nats.conf
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NATS_URL=nats://nats:4222
+      - JWT_SECRET=production_super_secret_key
+    depends_on:
+      - nats
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
